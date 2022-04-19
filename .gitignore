@@ -2,4 +2,4 @@ Keys/
 __pycache__/
 Test-Scripts/
 Compiled/*.spec
-Compiled/build/
+Compiled/build

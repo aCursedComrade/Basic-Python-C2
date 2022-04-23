@@ -32,7 +32,6 @@ class SSHServer (paramiko.ServerInterface):
 def main():
     server = "0.0.0.0" #To listen on all interfaces
     port = args.port
-    #CWD = os.getcwd()
     HOSTKEY = paramiko.RSAKey(filename=os.path.join(args.key_file)) #Provide private Key File via -f flag
 
     try:

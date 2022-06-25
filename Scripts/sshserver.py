@@ -1,7 +1,7 @@
 import paramiko
 import socket
 import argparse
-import time
+from time import sleep
 
 parser = argparse.ArgumentParser(description="C2 server configuration to listen for agents")
 parser._action_groups.pop()
@@ -77,7 +77,7 @@ def main():
     def incoming():
         try:
             if (conn.recv_ready() == False):
-                time.sleep(1)
+                sleep(1)
                 incoming()
             else:
                 while conn.recv_ready():

